@@ -1,23 +1,42 @@
+---@diagnostic disable: param-type-mismatch
+-- TODO Fix this to where the trains don't dissappear whenever I get close to them
+
+-- I slightly modified this to fix some of the natives.
+
 if (Config.Debug) then
 	Citizen.CreateThread(function()
 		DebugLog("Train Markers Init.")
-		while true do		
+		while true do
 			Wait(0)
-			if Config.ModelsLoaded then	
+			if Config.ModelsLoaded then
 				for i=1, #Config.TrainLocations, 1 do
 					local coords = GetEntityCoords(PlayerPedId())
 					local trainLocation = Config.TrainLocations[i]
-					if(GetDistanceBetweenCoords(coords, trainLocation.x, trainLocation.y, trainLocation.z, true) < Config.DrawDistance) then
-						DrawMarker(Config.MarkerType, trainLocation.x, trainLocation.y, trainLocation.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config.MarkerSize.x, Config.MarkerSize.y, Config.MarkerSize.z-2.0, Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, 100, false, true, 2, false, false, false, false)
+
+					if(GetDistanceBetweenCoords(coords.x, coords.y, coords.z, trainLocation.x, trainLocation.y, trainLocation.z, true) < Config.DrawDistance) then
+						DrawMarker(Config.MarkerType,
+						-- Marker position
+						trainLocation.x, trainLocation.y, trainLocation.z,
+						-- Direction
+						0.0, 0.0, 0.0,
+						-- Rotation
+						0.0, 0.0, 0.0,
+						-- Scale
+						Config.MarkerSize.x, Config.MarkerSize.y, Config.MarkerSize.z-2.0,
+						-- Color
+						Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, Config.MarkerColor.a,
+						false, true, 2, false,
+						nil, nil, false)
 					end
-					if(GetDistanceBetweenCoords(coords, trainLocation.x, trainLocation.y, trainLocation.z, true) < Config.MarkerSize.x / 2) then
+				end
+					if(GetDistanceBetweenCoords(coords.x, coords.y, coords.z, trainLocation.x, trainLocation.y, trainLocation.z, true) < Config.MarkerSize.x / 2) then
 						if(IsControlPressed(0,Config.KeyBind.Debug.SpawnTrain) and(GetGameTimer() - Config.EnterExitDelay) > Config.EnterExitDelayMax) then -- G
 							Config.EnterExitDelay = 0
 							Wait(60)
-							CreateTrain(trainLocation.trainID, trainLocation.trainX, trainLocation.trainY, trainLocation.trainZ)
+							CreateMissionTrain(trainLocation.trainID, trainLocation.trainX, trainLocation.trainY, trainLocation.trainZ, true)
 						end
 					end
-				end
+				-- end
 			end
 		end
 	end)
@@ -42,7 +61,7 @@ function DoTrains()
 				DebugLog("S: " .. Config.Speed)
 				Config.Speed = Config.Speed - GetTrainSpeeds(Config.TrainVeh).Dccel
 			end
-			
+
 			SetTrainCruiseSpeed(Config.TrainVeh,Config.Speed)
 		elseif IsPedInAnyTrain(PlayerPedId()) then -- Should fix not being able to drive trains after restart resource.
 			-- DebugLog("I'm in a train? Did the resource restart...")
@@ -81,7 +100,8 @@ function DoTrains()
 						DebugLog("T:" .. GetVehiclePedIsIn( ped, false ) .. "|M:" .. GetEntityModel(GetVehiclePedIsIn( ped, false )))
 					elseif GetCanPassenger(Config.TrainVeh) then
 						local off = GetOffsetFromEntityInWorldCoords(Config.TrainVeh, 0.0, -5.0, 0.6)
-						SetEntityCoords(PlayerPedId(), off.x, off.y, off.z)
+						-- SetEntityCoords(PlayerPedId(), off.x, off.y, off.z)
+						SetEntityCoords(PlayerPedId(), off.x, off.y, off.z, false, false, false, false)
 						Config.inTrainAsPas = true
 						DebugLog("Set into Train as Passenger!")
 						DebugLog("T:" .. GetVehiclePedIsIn( ped, false ) .. "|M:" .. GetEntityModel(GetVehiclePedIsIn( ped, false )))
@@ -133,7 +153,7 @@ Citizen.CreateThread(function()
 		Config.ModelsLoaded = true
 	end
 	LoadTrainModels()
-	
+
 	if (Config.Debug) then
 		DebugLog("Loading Train Blips.")
 		for i=1, #Config.TrainLocations, 1 do
@@ -149,7 +169,7 @@ Citizen.CreateThread(function()
 		end
 		DebugLog("Done Loading Train Blips.")
 	end
-	
+
 	while true do
 		Wait(0)
 		DoTrains()
@@ -157,7 +177,7 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
-	SetTrainsForceDoorsOpen(0)
+	SetTrainsForceDoorsOpen(false)
 	while true do
 		Citizen.Wait(0)
 		if Config.inTrain then
@@ -181,7 +201,7 @@ Citizen.CreateThread(function()
 						SetTrainDoorOpenRatio(Config.TrainVeh, 0, doorstate)
 						SetTrainDoorOpenRatio(Config.TrainVeh, 2, doorstate)
 						SetTrainDoorOpenRatio(carrige, 1, doorstate)
-						SetTrainDoorOpenRatio(carrige, 3, doorstate)	
+						SetTrainDoorOpenRatio(carrige, 3, doorstate)
 						doorstate = doorstate + 0.01
 						Citizen.Wait(2)
 					end
@@ -193,7 +213,7 @@ Citizen.CreateThread(function()
 						SetTrainDoorOpenRatio(Config.TrainVeh, 0, doorstate)
 						SetTrainDoorOpenRatio(Config.TrainVeh, 2, doorstate)
 						SetTrainDoorOpenRatio(carrige, 1, doorstate)
-						SetTrainDoorOpenRatio(carrige, 3, doorstate)	
+						SetTrainDoorOpenRatio(carrige, 3, doorstate)
 						doorstate = doorstate - 0.01
 						Citizen.Wait(2)
 					end
@@ -204,18 +224,18 @@ Citizen.CreateThread(function()
 
 				local doorstate = GetTrainDoorOpenRatio(Config.TrainVeh, 1)
 				local serverid = GetPlayerServerId(PlayerId())
-				if doorstate <=0.05 then
+				if doorstate <= 0.05 then
 					-- print (Config.TrainVeh .. " " .. carrige)
 					-- print (NetworkGetNetworkIdFromEntity(Config.TrainVeh) .. " " .. NetworkGetNetworkIdFromEntity(carrige))
 					--    
 					--           	
 					TriggerServerEvent('Train:opendoor', 0, NetworkGetNetworkIdFromEntity(Config.TrainVeh), NetworkGetNetworkIdFromEntity(carrige), serverid)
 					while doorstate <= 1.0 do
-						
+
 						SetTrainDoorOpenRatio(Config.TrainVeh, 1, doorstate)
 						SetTrainDoorOpenRatio(Config.TrainVeh, 3, doorstate)
 						SetTrainDoorOpenRatio(carrige, 0, doorstate)
-						SetTrainDoorOpenRatio(carrige, 2, doorstate)	
+						SetTrainDoorOpenRatio(carrige, 2, doorstate)
 						doorstate = doorstate + 0.01
 						Citizen.Wait(1)
 					end
@@ -241,8 +261,6 @@ Citizen.CreateThread(function()
 					SetVehicleDoorShut(carrige, 2, false)
 				end
 			end
-
-					
 		end
 	end
 end)

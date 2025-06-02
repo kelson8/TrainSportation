@@ -75,7 +75,7 @@ function GetTrainSpeeds(veh)
 	ret.MaxSpeed = 0
 	ret.Accel = 0
 	ret.Dccel = 0
-	
+
 	if Config.TrainSpeeds[model] then
 		local tcfg = Config.TrainSpeeds[model]
 		ret.MaxSpeed = tcfg.MaxSpeed -- Heavy, but fast.
@@ -88,7 +88,7 @@ end
 function GetCanPassenger(veh)
 	local model = GetEntityModel(veh)
 	local ret = false
-	
+
 	if Config.TrainSpeeds[model] ~= nil then
 		local tcfg = Config.TrainSpeeds[model]
 		ret = tcfg.Pass
@@ -97,7 +97,8 @@ function GetCanPassenger(veh)
 end
 
 function CreateTrain(type,x,y,z)
-	local train = CreateMissionTrain(type,x,y,z,true,false)
+	-- local train = CreateMissionTrain(type,x,y,z,true,false)
+	local train = CreateMissionTrain(type, x, y, z, true)
 	SetTrainSpeed(train,0)
 	SetTrainCruiseSpeed(train,0)
 	SetEntityAsMissionEntity(train, true, false)
@@ -105,6 +106,9 @@ function CreateTrain(type,x,y,z)
 	NetworkRegisterEntityAsNetworked(GetTrainCarriage( train, 1 ))
 	DebugLog("CreateTrain.")
 end
+
+-- TODO Look into these
+-- These could be useful for later
 
 function DebugLog(msg)
 	if Config.DebugLog then
